@@ -5,6 +5,8 @@ static TLS struct {
     uint8_t  available;
 } hydro_random_context;
 
+static hydro_random_api random_api;
+
 #if defined(AVR) && !defined(__unix__)
 #include <Arduino.h>
 
@@ -178,7 +180,23 @@ hydro_random_init(void)
 }
 
 #else
-#error Unsupported platform
+
+static int
+hydro_random_init(void)
+{
+    if (!random_api.get_bytes) {
+        return -1;
+    }
+
+    bool ret = random_api.get_bytes(random_api.context, hydro_random_context.state, sizeof(hydro_random_context.state)/sizeof(hydro_random_context.state[0]));
+    if (!ret) {
+        return -1;
+    }
+
+    hydro_random_context.counter = ~LOAD64_LE(hydro_random_context.state);
+    return 0;
+}
+
 #endif
 
 static void
@@ -191,6 +209,13 @@ hydro_random_check_initialized(void)
         gimli_core_u8(hydro_random_context.state, 0);
         hydro_random_ratchet();
         hydro_random_context.initialized = 1;
+    }
+}
+
+void hydro_random_install_api(hydro_random_api *api)
+{
+    if (api) {
+        memcpy(&random_api, api, sizeof(random_api));
     }
 }
 

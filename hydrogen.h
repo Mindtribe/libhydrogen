@@ -41,6 +41,17 @@ int hydro_init(void);
 
 #define hydro_random_SEEDBYTES 32
 
+// To support arbitrary platforms, there needs to be a way to pipe in
+// random bytes
+typedef bool (*hydro_random_api_get_bytes)(void *context, uint8_t *out_buffer, size_t out_buffer_len);
+
+typedef struct hydro_random_api {
+    hydro_random_api_get_bytes get_bytes;
+    void *context;
+} hydro_random_api;
+
+void hydro_random_install_api(hydro_random_api *api);
+
 uint32_t hydro_random_u32(void);
 
 uint32_t hydro_random_uniform(const uint32_t upper_bound);
